@@ -11,7 +11,7 @@ type Channel struct {
 	lock            sync.Mutex
 	nw              *sRing
 	nr              *sRing
-	receiveCh       chan interface{}
+	receiveCh       chan Any
 	sendCh          chan struct{}
 	close           bool
 	cap             int
@@ -31,11 +31,11 @@ func NewChannel(size ...int) *Channel {
 	return ch
 }
 
-func (q *Channel) getReceiveChan() chan interface{} {
+func (q *Channel) getReceiveChan() chan Any {
 	if q.receiveCh == nil {
 		q.chanLock.Lock()
 		if q.receiveCh == nil {
-			q.receiveCh = make(chan interface{})
+			q.receiveCh = make(chan Any)
 		}
 		q.chanLock.Unlock()
 	}
@@ -54,7 +54,7 @@ func (q *Channel) getSendChan() chan struct{} {
 }
 
 type sRing struct {
-	value interface{}
+	value Any
 	next  *sRing
 }
 
@@ -66,7 +66,7 @@ var (
 	ErrClosed         Err = errors.New("[Channel: Closed]")
 )
 
-func (q *Channel) put(v interface{}, block bool) (err Err) {
+func (q *Channel) put(v Any, block bool) (err Err) {
 	if q.close {
 		return ErrClosed
 	}
@@ -133,12 +133,12 @@ func (q *Channel) put(v interface{}, block bool) (err Err) {
 	return nil
 }
 
-func (q *Channel) Put(v interface{}) (err Err) {
+func (q *Channel) Put(v Any) (err Err) {
 	return q.put(v, false)
 }
 
 // 向Channel发送数据，如果达到最大容量则阻塞
-func (q *Channel) Send(v interface{}) (err Err) {
+func (q *Channel) Send(v Any) (err Err) {
 	return q.put(v, true)
 }
 
@@ -159,7 +159,7 @@ func (q *Channel) Cap() int {
 }
 
 // 阻塞直到取到值或者该队列关闭，模拟channel取值符，如果ok为false则表明此channel已关闭
-func (q *Channel) Receive() (v interface{}, err Err) {
+func (q *Channel) Receive() (v Any, err Err) {
 	return q.get(true)
 }
 
@@ -178,7 +178,7 @@ func (q *Channel) Close() (ok bool) {
 	return true
 }
 
-func (q *Channel) get(block bool) (v interface{}, err Err) {
+func (q *Channel) get(block bool) (v Any, err Err) {
 	q.lock.Lock()
 
 	if q.nr == q.nw {
@@ -219,11 +219,11 @@ func (q *Channel) get(block bool) (v interface{}, err Err) {
 }
 
 // 从Chanel中取数据，不阻塞，如果队列为空或者已关闭则返回错误
-func (q *Channel) Get() (v interface{}, err Err) {
+func (q *Channel) Get() (v Any, err Err) {
 	return q.get(false)
 }
 
-func (q *Channel) Peek() (v interface{}, err Err) {
+func (q *Channel) Peek() (v Any, err Err) {
 	q.lock.Lock()
 
 	if q.nr == q.nw {

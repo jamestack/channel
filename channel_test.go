@@ -7,7 +7,7 @@ import (
 )
 
 func TestChannel(t *testing.T) {
-	ch := NewChannel(1)
+	ch := NewRingBuffer(1)
 	//fmt.Println(ch.Close())
 
 	fmt.Println(ch.Get())
@@ -49,10 +49,11 @@ func benchSysChanel(num int64, size int) (res int64) {
 }
 
 func benchSnowChannel(num int64, size int) (res int64) {
-	ch := NewChannel(size)
+	ch := NewRingBuffer(size)
 	done := make(chan bool)
 	go func() {
 		for {
+			// <-time.After(100 * time.Millisecond)
 			_, err := ch.Receive()
 			if err != nil {
 				done <- true
@@ -64,6 +65,7 @@ func benchSnowChannel(num int64, size int) (res int64) {
 	}()
 
 	for i := int64(1); i <= num; i++ {
+		// <-time.After(10 * time.Millisecond)
 		ch.Send(i)
 	}
 	ch.Close()
@@ -98,7 +100,7 @@ func benchTwoNoSizedChannel(num int64) {
 
 // sized channel test
 func TestBenchSizedChannel(t *testing.T) {
-	fmt.Println("-----------bench 1000 1w 1---------")
+	fmt.Println("-----------bench 10000 1w 1---------")
 	benchTwoSizedChannel(10000, 1)
 	fmt.Println("-----------bench 100000 10w 10---------")
 	benchTwoSizedChannel(100000, 10)
@@ -106,8 +108,8 @@ func TestBenchSizedChannel(t *testing.T) {
 	benchTwoSizedChannel(10000000, 100)
 	fmt.Println("-----------bench 100000000 1e 1k---------")
 	benchTwoSizedChannel(100000000, 1000)
-	fmt.Println("-----------bench 1000000000 10e 10k---------")
-	benchTwoSizedChannel(1000000000, 10000)
+	// fmt.Println("-----------bench 1000000000 10e 10k---------")
+	// benchTwoSizedChannel(1000000000, 10000)
 }
 
 // no limited channel test
@@ -120,6 +122,6 @@ func TestBenchNoSizedChannel(t *testing.T) {
 	benchTwoNoSizedChannel(10000000)
 	fmt.Println("-----------bench 100000000 1e---------")
 	benchTwoNoSizedChannel(100000000)
-	fmt.Println("-----------bench 1000000000 10e---------")
-	benchTwoNoSizedChannel(1000000000)
+	// fmt.Println("-----------bench 1000000000 10e---------")
+	// benchTwoNoSizedChannel(1000000000)
 }
